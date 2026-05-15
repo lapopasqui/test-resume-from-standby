@@ -132,7 +132,7 @@ public class PowerMonitorWindow : IDisposable
 
                 case NativeMethods.WM_DESTROY:
                     ConsoleLogger.LogDebug("WM_DESTROY received");
-                    _windowHandle = IntPtr.Zero;
+                    Interlocked.Exchange(ref _windowHandle, IntPtr.Zero);
                     NativeMethods.PostQuitMessage(0);
                     return IntPtr.Zero;
 
@@ -285,14 +285,15 @@ public class PowerMonitorWindow : IDisposable
     public void StopMessageLoop()
     {
         _messageLoopRunning = false;
+        IntPtr windowHandle = Interlocked.CompareExchange(ref _windowHandle, IntPtr.Zero, IntPtr.Zero);
 
-        if (_windowHandle == IntPtr.Zero)
+        if (windowHandle == IntPtr.Zero)
         {
             ConsoleLogger.LogDebug("Stop requested after the monitor window was already closed");
             return;
         }
 
-        if (!NativeMethods.PostMessage(_windowHandle, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero))
+        if (!NativeMethods.PostMessage(windowHandle, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero))
         {
             int error = Marshal.GetLastWin32Error();
             ConsoleLogger.LogError($"Failed to post WM_CLOSE to the monitor window. Error code: {error}");
