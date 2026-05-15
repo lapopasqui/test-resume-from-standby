@@ -79,6 +79,13 @@ public static class NativeMethods
     public static extern IntPtr DefWindowProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     /// <summary>
+    /// Posts a message to the message queue of the thread that created the target window.
+    /// </summary>
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>
     /// Posts a quit message to the thread's message queue.
     /// </summary>
     [DllImport("user32.dll")]
@@ -99,6 +106,7 @@ public static class NativeMethods
     #region Constants
 
     // Window Messages
+    public const uint WM_CLOSE = 0x0010;
     public const uint WM_POWERBROADCAST = 0x0218;
     public const uint WM_DESTROY = 0x0002;
 

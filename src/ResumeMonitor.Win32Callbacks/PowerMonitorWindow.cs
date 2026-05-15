@@ -125,8 +125,14 @@ public class PowerMonitorWindow : IDisposable
                     HandlePowerBroadcast(wParam, lParam);
                     return IntPtr.Zero; // Message handled
 
+                case NativeMethods.WM_CLOSE:
+                    ConsoleLogger.LogDebug("WM_CLOSE received");
+                    NativeMethods.DestroyWindow(hWnd);
+                    return IntPtr.Zero;
+
                 case NativeMethods.WM_DESTROY:
                     ConsoleLogger.LogDebug("WM_DESTROY received");
+                    _windowHandle = IntPtr.Zero;
                     NativeMethods.PostQuitMessage(0);
                     return IntPtr.Zero;
 
@@ -279,7 +285,17 @@ public class PowerMonitorWindow : IDisposable
     public void StopMessageLoop()
     {
         _messageLoopRunning = false;
-        NativeMethods.PostQuitMessage(0);
+
+        if (_windowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        if (!NativeMethods.PostMessage(_windowHandle, NativeMethods.WM_CLOSE, IntPtr.Zero, IntPtr.Zero))
+        {
+            int error = Marshal.GetLastWin32Error();
+            ConsoleLogger.LogError($"Failed to post WM_CLOSE to the monitor window. Error code: {error}");
+        }
     }
 
     /// <summary>
