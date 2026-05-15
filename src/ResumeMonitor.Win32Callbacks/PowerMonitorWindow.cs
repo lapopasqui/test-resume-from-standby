@@ -285,7 +285,7 @@ public class PowerMonitorWindow : IDisposable
     public void StopMessageLoop()
     {
         _messageLoopRunning = false;
-        IntPtr windowHandle = Interlocked.CompareExchange(ref _windowHandle, IntPtr.Zero, IntPtr.Zero);
+        IntPtr windowHandle = Volatile.Read(ref _windowHandle);
 
         if (windowHandle == IntPtr.Zero)
         {
