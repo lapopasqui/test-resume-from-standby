@@ -10,7 +10,6 @@ namespace ResumeMonitor.Win32Callbacks;
 class Program
 {
     private static PowerMonitorWindow? _monitorWindow;
-    private static bool _isRunning = true;
 
     static void Main(string[] args)
     {
@@ -62,7 +61,6 @@ class Program
         e.Cancel = true; // Prevent immediate termination
         ConsoleLogger.LogWarning("Ctrl+C detected - shutting down gracefully...");
         
-        _isRunning = false;
         _monitorWindow?.StopMessageLoop();
     }
 }

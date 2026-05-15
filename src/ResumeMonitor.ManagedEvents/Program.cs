@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace ResumeMonitor.ManagedEvents;
@@ -7,6 +8,7 @@ namespace ResumeMonitor.ManagedEvents;
 /// Console application that monitors Windows power management events using
 /// the managed .NET SystemEvents API.
 /// </summary>
+[SupportedOSPlatform("windows")]
 class Program
 {
     private static bool _isRunning = true;
