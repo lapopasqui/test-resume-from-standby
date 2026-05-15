@@ -7,6 +7,8 @@ internal static class NativeMethods
     internal const uint WM_POWERBROADCAST = 0x0218;
     internal const uint WM_QUIT = 0x0012;
 
+    // PBT_* values live in the WM_POWERBROADCAST wParam domain, so numeric overlap
+    // with unrelated message IDs (such as WM_QUIT) is expected and not a conflict.
     internal const nuint PBT_APMRESUMEAUTOMATIC = 0x0012;
     internal const nuint PBT_APMRESUMESUSPEND = 0x0007;
     internal const nuint PBT_APMRESUMECRITICAL = 0x0006;

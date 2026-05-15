@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace ResumeMonitor.ManagedEvents;
 
 internal sealed class ConsoleLogger
