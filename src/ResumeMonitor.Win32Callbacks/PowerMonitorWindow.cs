@@ -3,14 +3,14 @@ using System.Runtime.InteropServices;
 namespace ResumeMonitor.Win32Callbacks;
 
 /// <summary>
-/// Implements a message-only window that receives WM_POWERBROADCAST notifications
+/// Implements a hidden top-level window that receives WM_POWERBROADCAST notifications
 /// from Windows. This is the most reliable way for a console application to receive
 /// power management events.
 /// 
 /// Why a hidden window?
 /// - Console applications don't automatically receive WM_POWERBROADCAST messages
 /// - RegisterPowerSettingNotification requires a window handle
-/// - A message-only window (HWND_MESSAGE parent) is lightweight and invisible
+/// - A hidden top-level window can receive broadcast power messages
 /// - This approach works reliably across all Windows versions
 /// </summary>
 public class PowerMonitorWindow : IDisposable
@@ -84,19 +84,19 @@ public class PowerMonitorWindow : IDisposable
     }
 
     /// <summary>
-    /// Creates a message-only window for receiving power notifications.
+    /// Creates a hidden top-level window for receiving power notifications.
     /// </summary>
     private void CreateWindow()
     {
-        // Create a message-only window (parent = HWND_MESSAGE)
-        // Message-only windows are not visible and don't participate in the window hierarchy
+        // Create a hidden top-level window (parent = NULL).
+        // WM_POWERBROADCAST notifications are broadcast to top-level windows.
         _windowHandle = NativeMethods.CreateWindowEx(
             0,                              // dwExStyle
             WindowClassName,                // lpClassName
             "PowerMonitorWindow",           // lpWindowName
             0,                              // dwStyle (not visible)
-            0, 0, 0, 0,                     // position and size (irrelevant for message-only)
-            NativeMethods.HWND_MESSAGE,     // hWndParent (HWND_MESSAGE = message-only window)
+            0, 0, 0, 0,                     // position and size (hidden window)
+            IntPtr.Zero,                    // hWndParent (NULL = top-level window)
             IntPtr.Zero,                    // hMenu
             _moduleHandle,                  // hInstance
             IntPtr.Zero                     // lpParam

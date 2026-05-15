@@ -217,8 +217,8 @@ rundll32.exe powrprof.dll,SetSuspendState 0,1,0
 3. **Polling**: Inefficient and unreliable
 4. **Service**: Overkill for a console application
 
-**Chosen Approach: Message-Only Window**
-- A message-only window (parent = `HWND_MESSAGE`) is lightweight and invisible
+**Chosen Approach: Hidden Top-Level Window**
+- A hidden top-level window (parent = `NULL`) can receive `WM_POWERBROADCAST`
 - Reliably receives `WM_POWERBROADCAST` messages
 - Standard Windows pattern for console apps needing window messages
 - Clean separation of concerns with dedicated window class
@@ -275,7 +275,7 @@ test-resume-from-standby/
 │       ├── Program.cs                    # Main entry point
 │       ├── ConsoleLogger.cs              # Colored logging helper
 │       ├── NativeMethods.cs              # P/Invoke declarations
-│       └── PowerMonitorWindow.cs         # Hidden window and message loop
+│       └── PowerMonitorWindow.cs         # Hidden top-level window and message loop
 ```
 
 ## Implementation Highlights
@@ -289,7 +289,7 @@ test-resume-from-standby/
 
 ### Win32 Callbacks (P/Invoke)
 
-- Creates a message-only window (`HWND_MESSAGE` parent)
+- Creates a hidden top-level window (`hWndParent = NULL`)
 - Implements custom window procedure (`WndProc`) to receive `WM_POWERBROADCAST`
 - Decodes all power event types:
   - `PBT_APMSUSPEND` - System suspending

@@ -113,9 +113,6 @@ public static class NativeMethods
     public const uint PBT_APMQUERYSUSPENDFAILED = 0x0002; // Suspend request denied
     public const uint PBT_POWERSETTINGCHANGE = 0x8013;  // Power setting changed
 
-    // Special window handle for message-only windows
-    public static readonly IntPtr HWND_MESSAGE = new IntPtr(-3);
-
     #endregion
 
     #region Structures

@@ -17,7 +17,7 @@ class Program
         ConsoleLogger.LogInfo($"Process ID: {Environment.ProcessId}");
         ConsoleLogger.LogInfo($"Main Thread ID: {Environment.CurrentManagedThreadId}");
         ConsoleLogger.LogInfo("Monitoring system power events using Win32 API (P/Invoke)");
-        ConsoleLogger.LogInfo("Implementation: Hidden window + WM_POWERBROADCAST messages");
+        ConsoleLogger.LogInfo("Implementation: Hidden top-level window + WM_POWERBROADCAST messages");
         ConsoleLogger.LogInfo("Press Ctrl+C to exit");
         Console.WriteLine();
 
@@ -26,9 +26,9 @@ class Program
 
         try
         {
-            // Create a hidden window to receive power broadcast messages
+            // Create a hidden top-level window to receive power broadcast messages
             _monitorWindow = new PowerMonitorWindow();
-            ConsoleLogger.LogSuccess("Successfully created message-only window for power notifications");
+            ConsoleLogger.LogSuccess("Successfully created hidden top-level window for power notifications");
             ConsoleLogger.LogInfo($"Window Handle: 0x{_monitorWindow.Handle:X}");
             Console.WriteLine();
 
