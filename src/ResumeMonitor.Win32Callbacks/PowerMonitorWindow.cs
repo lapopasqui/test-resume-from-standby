@@ -288,6 +288,7 @@ public class PowerMonitorWindow : IDisposable
 
         if (_windowHandle == IntPtr.Zero)
         {
+            ConsoleLogger.LogDebug("Stop requested after the monitor window was already closed");
             return;
         }
 
