@@ -66,6 +66,7 @@ public sealed class DiagnosticEventTracker
     private readonly string _applicationName;
     private readonly NetworkIdentity _identity;
     private readonly string _commonLogPath;
+    private readonly object _counterLock = new();
     private long _sequence;
     private long _onCount;
     private long _offCount;
@@ -88,19 +89,33 @@ public sealed class DiagnosticEventTracker
 
     public void LogPowerEvent(string eventName, PowerTransition transition)
     {
-        if (transition == PowerTransition.On)
+        long onCount;
+        long offCount;
+
+        lock (_counterLock)
         {
-            Interlocked.Increment(ref _onCount);
-        }
-        else if (transition == PowerTransition.Off)
-        {
-            Interlocked.Increment(ref _offCount);
+            if (transition == PowerTransition.On)
+            {
+                _onCount++;
+            }
+            else if (transition == PowerTransition.Off)
+            {
+                _offCount++;
+            }
+
+            onCount = _onCount;
+            offCount = _offCount;
         }
 
-        WriteLine(eventName, transition, "Power notification");
+        WriteLine(eventName, transition, "Power notification", onCount, offCount);
     }
 
     private void WriteLine(string eventName, PowerTransition transition, string details)
+    {
+        WriteLine(eventName, transition, details, OnCount, OffCount);
+    }
+
+    private void WriteLine(string eventName, PowerTransition transition, string details, long onCount, long offCount)
     {
         var sequence = Interlocked.Increment(ref _sequence);
         var utcTimestamp = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
@@ -115,8 +130,8 @@ public sealed class DiagnosticEventTracker
             sequence.ToString(CultureInfo.InvariantCulture),
             transition,
             eventName,
-            $"on={OnCount.ToString(CultureInfo.InvariantCulture)}",
-            $"off={OffCount.ToString(CultureInfo.InvariantCulture)}",
+            $"on={onCount.ToString(CultureInfo.InvariantCulture)}",
+            $"off={offCount.ToString(CultureInfo.InvariantCulture)}",
             $"if={_identity.InterfaceName}",
             $"ip={_identity.IpAddress}",
             $"mac={_identity.MacAddress}",
