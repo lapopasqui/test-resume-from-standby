@@ -97,7 +97,7 @@ internal static class Program
         {
             if (!TryNormalizeMacAddress(args[2], out macOverride))
             {
-                errorMessage = "Optional mac-address is invalid. Expected format like AA:BB:CC:DD:EE:FF.";
+                errorMessage = "Invalid mac-address format. Expected value like AA:BB:CC:DD:EE:FF.";
                 return false;
             }
         }
