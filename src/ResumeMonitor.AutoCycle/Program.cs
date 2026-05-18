@@ -11,6 +11,7 @@ internal static class Program
     private const int WolServerPort = 9001;
     private const int RestartDelaySeconds = 90;
     private const string PowerEventName = @"Global\PowerTestEvent";
+    private static readonly Regex MacAddressRegex = new(@"^[0-9A-Fa-f]{2}([-:][0-9A-Fa-f]{2}){5}$", RegexOptions.Compiled);
 
     private static int Main(string[] args)
     {
@@ -108,7 +109,7 @@ internal static class Program
     {
         normalizedMac = string.Empty;
         var trimmed = value.Trim();
-        if (!Regex.IsMatch(trimmed, @"^[0-9A-Fa-f]{2}([-:][0-9A-Fa-f]{2}){5}$"))
+        if (!MacAddressRegex.IsMatch(trimmed))
         {
             return false;
         }
