@@ -98,15 +98,16 @@ src\ResumeMonitor.Win32Callbacks\bin\Debug\net8.0\ResumeMonitor.Win32Callbacks.e
 
 ### ResumeMonitor.AutoCycle
 
-Run from command line (requires 2 mandatory args):
+Run from command line (2 mandatory args + 1 optional arg):
 ```bash
-dotnet run --project src/ResumeMonitor.AutoCycle/ResumeMonitor.AutoCycle.csproj -- <server-ip> <timeout-ms>
+dotnet run --project src/ResumeMonitor.AutoCycle/ResumeMonitor.AutoCycle.csproj -- <server-ip> <timeout-ms> [mac-address]
 ```
 
 At startup the app prints:
 1. server IP and TCP timeout from command line
 2. local interface name, IP and MAC
-3. confirmation prompt (`y` required to proceed)
+3. WOL MAC actually used (optional CLI MAC override has priority over auto-detected MAC)
+4. confirmation prompt (`y` required to proceed)
 
 Then it loops forever:
 1. sends `<mac-address>;90` to the TCP server on port `9001` to schedule WOL

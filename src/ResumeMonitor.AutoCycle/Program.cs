@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using System.Text;
 using ResumeMonitor.Shared;
 
@@ -13,10 +14,10 @@ internal static class Program
 
     private static int Main(string[] args)
     {
-        if (!TryParseArguments(args, out var serverIp, out var timeoutMilliseconds, out var validationError))
+        if (!TryParseArguments(args, out var serverIp, out var timeoutMilliseconds, out var macOverride, out var validationError))
         {
             ConsoleLogger.LogError(validationError);
-            ConsoleLogger.LogError("Usage: ResumeMonitor.AutoCycle <server-ip> <timeout-ms>");
+            ConsoleLogger.LogError("Usage: ResumeMonitor.AutoCycle <server-ip> <timeout-ms> [mac-address]");
             return 1;
         }
 
@@ -28,6 +29,11 @@ internal static class Program
         ConsoleLogger.LogInfo($"Interface: {identity.InterfaceName}");
         ConsoleLogger.LogInfo($"Local IP: {identity.IpAddress}");
         ConsoleLogger.LogInfo($"Local MAC: {identity.MacAddress}");
+        ConsoleLogger.LogInfo($"WOL MAC in use: {macOverride ?? identity.MacAddress}");
+        if (!string.IsNullOrWhiteSpace(macOverride))
+        {
+            ConsoleLogger.LogInfo("MAC source: command line override");
+        }
         ConsoleLogger.LogInfo($"Power event name: {PowerEventName}");
         ConsoleLogger.LogWarning("Proceed with automatic power cycle loop? [y/N]");
 
@@ -45,7 +51,7 @@ internal static class Program
             cycle++;
             ConsoleLogger.LogInfo($"Starting cycle #{cycle}");
 
-            SendWolRequest(serverIp, timeoutMilliseconds, identity.MacAddress);
+            SendWolRequest(serverIp, timeoutMilliseconds, macOverride ?? identity.MacAddress);
             SignalPowerTestEvent();
             TriggerShutdown();
 
@@ -54,15 +60,16 @@ internal static class Program
         }
     }
 
-    private static bool TryParseArguments(string[] args, out string serverIp, out int timeoutMilliseconds, out string errorMessage)
+    private static bool TryParseArguments(string[] args, out string serverIp, out int timeoutMilliseconds, out string? macOverride, out string errorMessage)
     {
         serverIp = string.Empty;
         timeoutMilliseconds = 0;
+        macOverride = null;
         errorMessage = string.Empty;
 
-        if (args.Length != 2)
+        if (args.Length is < 2 or > 3)
         {
-            errorMessage = "Exactly 2 parameters are required: <server-ip> <timeout-ms>.";
+            errorMessage = "Required parameters: <server-ip> <timeout-ms>. Optional: [mac-address].";
             return false;
         }
 
@@ -85,6 +92,28 @@ internal static class Program
             return false;
         }
 
+        if (args.Length == 3)
+        {
+            if (!TryNormalizeMacAddress(args[2], out macOverride))
+            {
+                errorMessage = "Optional mac-address is invalid. Expected format like AA:BB:CC:DD:EE:FF.";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryNormalizeMacAddress(string value, out string normalizedMac)
+    {
+        normalizedMac = string.Empty;
+        var trimmed = value.Trim();
+        if (!Regex.IsMatch(trimmed, @"^[0-9A-Fa-f]{2}([-:][0-9A-Fa-f]{2}){5}$"))
+        {
+            return false;
+        }
+
+        normalizedMac = trimmed.Replace('-', ':').ToUpperInvariant();
         return true;
     }
 
