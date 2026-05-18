@@ -1,7 +1,8 @@
-using System.Net.Sockets;
-using System.Text.RegularExpressions;
-using System.Text;
 using ResumeMonitor.Shared;
+using System.Diagnostics;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace ResumeMonitor.AutoCycle;
 
@@ -14,10 +15,10 @@ internal static class Program
 
     private static int Main(string[] args)
     {
-        if (!TryParseArguments(args, out var serverIp, out var timeoutMilliseconds, out var macOverride, out var validationError))
+        if (!TryParseArguments(args, out var serverIp, out var timeoutSeconds, out var macOverride, out var validationError))
         {
             ConsoleLogger.LogError(validationError);
-            ConsoleLogger.LogError("Usage: ResumeMonitor.AutoCycle <server-ip> <timeout-ms> [mac-address]");
+            ConsoleLogger.LogError("Usage: ResumeMonitor.AutoCycle <server-ip> <timeout-s> [mac-address]");
             return 1;
         }
 
@@ -25,7 +26,7 @@ internal static class Program
 
         ConsoleLogger.LogInfo("ResumeMonitor.AutoCycle - Starting");
         ConsoleLogger.LogInfo($"Server IP: {serverIp}");
-        ConsoleLogger.LogInfo($"TCP timeout: {timeoutMilliseconds} ms");
+        ConsoleLogger.LogInfo($"TCP timeout: {timeoutSeconds} s");
         ConsoleLogger.LogInfo($"Interface: {identity.InterfaceName}");
         ConsoleLogger.LogInfo($"Local IP: {identity.IpAddress}");
         ConsoleLogger.LogInfo($"Local MAC: {identity.MacAddress}");
@@ -50,8 +51,8 @@ internal static class Program
             cycle++;
             ConsoleLogger.LogInfo($"Starting cycle #{cycle}");
 
-            SendWolRequest(serverIp, timeoutMilliseconds, effectiveMac);
-            SignalPowerTestEvent();
+            SendWolRequest(serverIp, timeoutSeconds, effectiveMac);
+            TriggerStandby();
 
             ConsoleLogger.LogInfo("Power test event signaled; if the host remains on, retrying cycle in 30 seconds.");
             Thread.Sleep(30_000);
@@ -190,12 +191,23 @@ internal static class Program
         }
     }
 
-    private static void SignalPowerTestEvent()
+    private static void TriggerStandby()
     {
-        using var ewh = new EventWaitHandle(false, EventResetMode.ManualReset, PowerEventName, out _);
-        // The delay gives the WOL server request time to be transmitted and flushed before shutdown starts.
-        Thread.Sleep(3_000);
-        ewh.Set();
-        ConsoleLogger.LogInfo($"Set event {PowerEventName}");
+        ConsoleLogger.LogWarning("Triggering machine standby (suspend)...");
+
+        // Equivalent of SetSuspendState(PowerState.Suspend, false, true):
+        // Arguments: Hibernate=0, ForceCritical=0, DisableWakeEvent=1
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "rundll32.exe",
+                Arguments = "powrprof.dll,SetSuspendState 0,0,1",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
     }
 }
