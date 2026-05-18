@@ -1,5 +1,5 @@
-namespace ResumeMonitor.Win32Callbacks;
 using ResumeMonitor.Shared;
+namespace ResumeMonitor.Win32Callbacks;
 
 /// <summary>
 /// Console application that monitors Windows power management events using

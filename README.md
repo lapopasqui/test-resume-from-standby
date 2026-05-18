@@ -4,12 +4,14 @@ A Windows-focused .NET solution for monitoring and comparing system power manage
 
 ## Overview
 
-This solution contains two console applications that monitor Windows power management events (suspend/resume from sleep or standby). The purpose is to compare the behavior and reliability of two different implementation approaches:
+This solution contains three console applications for Windows power diagnostics (suspend/resume + automatic power-cycle). The purpose is to compare the behavior and reliability of two different monitoring approaches and automate iterative sleep/wake diagnostics:
 
 1. **ResumeMonitor.ManagedEvents** - Uses the managed .NET API (`Microsoft.Win32.SystemEvents`)
 2. **ResumeMonitor.Win32Callbacks** - Uses native Win32 APIs through P/Invoke with `WM_POWERBROADCAST` messages
+3. **ResumeMonitor.AutoCycle** - Schedules Wake-on-LAN via TCP server, signals shutdown event, and powers off the machine
 
 Both applications log detailed information about power events, including timestamps, event types, and technical details, making it easy to observe and compare their behavior during system suspend/resume cycles.
+Both monitoring applications also keep synchronized ON/OFF counters and write a shared structured log to make differences non-ambiguous.
 
 ## Why Two Implementations?
 
@@ -66,6 +68,7 @@ dotnet build test-resume-from-standby.sln -c Release
 After building, executables will be located at:
 - `src/ResumeMonitor.ManagedEvents/bin/Debug/net8.0/ResumeMonitor.ManagedEvents.exe`
 - `src/ResumeMonitor.Win32Callbacks/bin/Debug/net8.0/ResumeMonitor.Win32Callbacks.exe`
+- `src/ResumeMonitor.AutoCycle/bin/Debug/net8.0/ResumeMonitor.AutoCycle.exe`
 
 ## Running the Applications
 
@@ -93,6 +96,23 @@ Or run the built executable directly:
 src\ResumeMonitor.Win32Callbacks\bin\Debug\net8.0\ResumeMonitor.Win32Callbacks.exe
 ```
 
+### ResumeMonitor.AutoCycle
+
+Run from command line (requires 2 mandatory args):
+```bash
+dotnet run --project src/ResumeMonitor.AutoCycle/ResumeMonitor.AutoCycle.csproj -- <server-ip> <timeout-ms>
+```
+
+At startup the app prints:
+1. server IP and TCP timeout from command line
+2. local interface name, IP and MAC
+3. confirmation prompt (`y` required to proceed)
+
+Then it loops forever:
+1. sends `<mac-address>;90` to the TCP server on port `9001` to schedule WOL
+2. sets global event `Global\PowerTestEvent`
+3. triggers `shutdown /s /t 0 /f`
+
 ### What You'll See
 
 Both applications will:
@@ -101,6 +121,14 @@ Both applications will:
 3. Wait for power events
 4. Log detailed information when power events occur (suspend/resume)
 5. Continue running until you press `Ctrl+C`
+6. Update ON/OFF counters (`ON = resume`, `OFF = suspend`) and append a line to a shared diagnostic log
+
+### Shared Diagnostic Log (for objective comparison)
+
+- Both monitor apps append structured lines to a common file to compare behavior without ambiguity.
+- Default path: `resume-monitor-common.log` in each app output directory.
+- To force a truly shared log (recommended), set environment variable `RESUME_MONITOR_COMMON_LOG_PATH` to the same file path for both apps (for example a UNC/network path).
+- Each row includes: UTC/local timestamp, machine, app, PID, sequence, transition (`On/Off/Other`), event, counters, interface, IP, MAC.
 
 ## Testing Suspend/Resume Behavior
 
@@ -276,6 +304,12 @@ test-resume-from-standby/
 │       ├── ConsoleLogger.cs              # Colored logging helper
 │       ├── NativeMethods.cs              # P/Invoke declarations
 │       └── PowerMonitorWindow.cs         # Hidden top-level window and message loop
+│   ├── ResumeMonitor.AutoCycle/          # Automatic power cycle runner
+│   │   ├── ResumeMonitor.AutoCycle.csproj
+│   │   ├── Program.cs                    # TCP WOL request + event signal + shutdown loop
+│   │   └── ConsoleLogger.cs              # Colored logging helper
+│   └── ResumeMonitor.Shared/
+│       └── DiagnosticTelemetry.cs        # Shared NIC identity + common event telemetry
 ```
 
 ## Implementation Highlights
