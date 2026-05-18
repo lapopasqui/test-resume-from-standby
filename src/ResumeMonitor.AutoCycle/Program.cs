@@ -30,11 +30,10 @@ internal static class Program
         ConsoleLogger.LogInfo($"Interface: {identity.InterfaceName}");
         ConsoleLogger.LogInfo($"Local IP: {identity.IpAddress}");
         ConsoleLogger.LogInfo($"Local MAC: {identity.MacAddress}");
-        ConsoleLogger.LogInfo($"WOL MAC in use: {macOverride ?? identity.MacAddress}");
-        if (!string.IsNullOrWhiteSpace(macOverride))
-        {
-            ConsoleLogger.LogInfo("MAC source: command line override");
-        }
+        var effectiveMac = macOverride ?? identity.MacAddress;
+        var macSource = string.IsNullOrWhiteSpace(macOverride) ? "auto-detected from local interface" : "command line override";
+        ConsoleLogger.LogInfo($"WOL MAC in use: {effectiveMac}");
+        ConsoleLogger.LogInfo($"MAC source: {macSource}");
         ConsoleLogger.LogInfo($"Power event name: {PowerEventName}");
         ConsoleLogger.LogWarning("Proceed with automatic power cycle loop? [y/N]");
 
@@ -52,7 +51,7 @@ internal static class Program
             cycle++;
             ConsoleLogger.LogInfo($"Starting cycle #{cycle}");
 
-            SendWolRequest(serverIp, timeoutMilliseconds, macOverride ?? identity.MacAddress);
+            SendWolRequest(serverIp, timeoutMilliseconds, effectiveMac);
             SignalPowerTestEvent();
             TriggerShutdown();
 
