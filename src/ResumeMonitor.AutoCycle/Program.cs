@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Text;
@@ -53,9 +52,8 @@ internal static class Program
 
             SendWolRequest(serverIp, timeoutMilliseconds, effectiveMac);
             SignalPowerTestEvent();
-            TriggerShutdown();
 
-            ConsoleLogger.LogInfo("Shutdown requested; if the host remains on, retrying cycle in 30 seconds.");
+            ConsoleLogger.LogInfo("Power test event signaled; if the host remains on, retrying cycle in 30 seconds.");
             Thread.Sleep(30_000);
         }
     }
@@ -199,23 +197,5 @@ internal static class Program
         Thread.Sleep(3_000);
         ewh.Set();
         ConsoleLogger.LogInfo($"Set event {PowerEventName}");
-    }
-
-    private static void TriggerShutdown()
-    {
-        ConsoleLogger.LogWarning("Triggering machine shutdown...");
-
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "shutdown",
-                Arguments = "/s /t 0 /f",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            }
-        };
-
-        process.Start();
     }
 }

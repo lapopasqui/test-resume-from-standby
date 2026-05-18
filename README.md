@@ -111,8 +111,7 @@ At startup the app prints:
 
 Then it loops forever:
 1. sends `<mac-address>;90` to the TCP server on port `9001` to schedule WOL
-2. sets global event `Global\PowerTestEvent`
-3. triggers `shutdown /s /t 0 /f`
+2. sets global event `Global\PowerTestEvent` (external controller handles shutdown)
 
 ### What You'll See
 
