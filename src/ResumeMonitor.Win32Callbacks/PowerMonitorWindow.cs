@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using ResumeMonitor.Shared;
 
 namespace ResumeMonitor.Win32Callbacks;
 
@@ -24,6 +25,7 @@ public class PowerMonitorWindow : IDisposable
     
     // Keep a reference to the delegate to prevent garbage collection
     private readonly NativeMethods.WndProc _windowProcDelegate;
+    private readonly DiagnosticEventTracker _eventTracker;
 
     /// <summary>
     /// Gets the handle to the created window.
@@ -33,8 +35,10 @@ public class PowerMonitorWindow : IDisposable
     /// <summary>
     /// Creates a new power monitor window.
     /// </summary>
-    public PowerMonitorWindow()
+    public PowerMonitorWindow(DiagnosticEventTracker eventTracker)
     {
+        _eventTracker = eventTracker;
+
         // Store the delegate reference to prevent it from being garbage collected
         _windowProcDelegate = WindowProc;
         
@@ -179,6 +183,17 @@ public class PowerMonitorWindow : IDisposable
         };
 
         ConsoleLogger.LogEvent($"Event Type: {eventName}");
+
+        var transition = eventType switch
+        {
+            NativeMethods.PBT_APMSUSPEND => PowerTransition.Off,
+            NativeMethods.PBT_APMRESUMESUSPEND => PowerTransition.On,
+            NativeMethods.PBT_APMRESUMEAUTOMATIC => PowerTransition.On,
+            NativeMethods.PBT_APMRESUMECRITICAL => PowerTransition.On,
+            _ => PowerTransition.Other
+        };
+        _eventTracker.LogPowerEvent(eventName, transition);
+        ConsoleLogger.LogInfo($"Counters => ON: {_eventTracker.OnCount} | OFF: {_eventTracker.OffCount}");
 
         // Provide detailed explanation of each event type
         switch (eventType)

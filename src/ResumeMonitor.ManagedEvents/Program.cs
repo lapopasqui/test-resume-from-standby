@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
+using ResumeMonitor.Shared;
 
 namespace ResumeMonitor.ManagedEvents;
 
@@ -13,15 +14,24 @@ class Program
 {
     private static bool _isRunning = true;
     private static readonly object _lockObject = new();
+    private static DiagnosticEventTracker? _eventTracker;
 
     static void Main(string[] args)
     {
+        var identity = NetworkIdentity.Resolve();
+        _eventTracker = new DiagnosticEventTracker("ResumeMonitor.ManagedEvents", identity);
+
         ConsoleLogger.LogInfo("ResumeMonitor.ManagedEvents - Starting");
         ConsoleLogger.LogInfo($"Process ID: {Environment.ProcessId}");
         ConsoleLogger.LogInfo($"Main Thread ID: {Environment.CurrentManagedThreadId}");
+        ConsoleLogger.LogInfo($"Interface: {identity.InterfaceName}");
+        ConsoleLogger.LogInfo($"Local IP: {identity.IpAddress}");
+        ConsoleLogger.LogInfo($"Local MAC: {identity.MacAddress}");
+        ConsoleLogger.LogInfo($"Common diagnostic log: {_eventTracker.CommonLogPath}");
         ConsoleLogger.LogInfo("Monitoring system power events using Microsoft.Win32.SystemEvents");
         ConsoleLogger.LogInfo("Press Ctrl+C to exit");
         Console.WriteLine();
+        _eventTracker.LogStartup();
 
         // Set up Ctrl+C handler for graceful shutdown
         Console.CancelKeyPress += OnCancelKeyPress;
@@ -97,22 +107,30 @@ class Program
         switch (e.Mode)
         {
             case PowerModes.Resume:
+                _eventTracker?.LogPowerEvent("PowerModes.Resume", PowerTransition.On);
                 ConsoleLogger.LogSuccess("▶ System RESUMED from suspend/sleep");
+                ConsoleLogger.LogInfo($"Counters => ON: {_eventTracker?.OnCount ?? 0} | OFF: {_eventTracker?.OffCount ?? 0}");
                 ConsoleLogger.LogEvent("   This event fires when the system wakes from sleep or hibernation.");
                 break;
 
             case PowerModes.Suspend:
+                _eventTracker?.LogPowerEvent("PowerModes.Suspend", PowerTransition.Off);
                 ConsoleLogger.LogWarning("■ System is SUSPENDING (going to sleep)");
+                ConsoleLogger.LogInfo($"Counters => ON: {_eventTracker?.OnCount ?? 0} | OFF: {_eventTracker?.OffCount ?? 0}");
                 ConsoleLogger.LogEvent("   This event fires when the system is about to enter sleep or hibernation.");
                 break;
 
             case PowerModes.StatusChange:
+                _eventTracker?.LogPowerEvent("PowerModes.StatusChange", PowerTransition.Other);
                 ConsoleLogger.LogEvent("⚡ Power STATUS CHANGED");
+                ConsoleLogger.LogInfo($"Counters => ON: {_eventTracker?.OnCount ?? 0} | OFF: {_eventTracker?.OffCount ?? 0}");
                 ConsoleLogger.LogEvent("   This may indicate a change in power source (AC/battery) or battery level.");
                 ConsoleLogger.LogEvent("   Note: SystemEvents does not provide additional details for StatusChange.");
                 break;
 
             default:
+                _eventTracker?.LogPowerEvent($"PowerModes.{e.Mode}", PowerTransition.Other);
+                ConsoleLogger.LogInfo($"Counters => ON: {_eventTracker?.OnCount ?? 0} | OFF: {_eventTracker?.OffCount ?? 0}");
                 ConsoleLogger.LogEvent($"⚠ Unknown power mode: {e.Mode}");
                 break;
         }
