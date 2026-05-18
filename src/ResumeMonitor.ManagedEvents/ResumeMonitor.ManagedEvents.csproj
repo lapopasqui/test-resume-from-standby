@@ -13,4 +13,8 @@
     <PackageReference Include="Microsoft.Win32.SystemEvents" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\ResumeMonitor.Shared\DiagnosticTelemetry.cs" Link="Shared\DiagnosticTelemetry.cs" />
+  </ItemGroup>
+
 </Project>
